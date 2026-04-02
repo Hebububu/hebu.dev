@@ -69,7 +69,6 @@
 		transform: translate(-50%, -50%);
 		object-fit: cover;
 		pointer-events: none;
-		filter: blur(4px);
 	}
 	.video-overlay {
 		position: absolute;
