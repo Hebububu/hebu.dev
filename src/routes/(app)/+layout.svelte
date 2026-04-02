@@ -3,9 +3,7 @@
 		GithubLogo,
 		DiscordLogo,
 		EnvelopeSimple,
-		TwitterLogo,
-		SpeakerSimpleHigh,
-		SpeakerSimpleSlash
+		TwitterLogo
 	} from 'phosphor-svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
@@ -15,94 +13,8 @@
 	let mounted = $state(false);
 	let time = $state('');
 
-	// YouTube player state
-	let isPlaying = $state(false);
-	let isMuted = $state(true);
-	let progress = $state(0);
-	let progressInterval: ReturnType<typeof setInterval> | null = null;
-
 	// Contribution grid from GitHub data (fetched client-side)
 	let contributions: number[][] = $state([]);
-
-	function getPlayer(): any {
-		return (window as any).__ytPlayer ?? null;
-	}
-
-	function pollForPlayer() {
-		const check = setInterval(() => {
-			const p = getPlayer();
-			if (p && p.getPlayerState) {
-				clearInterval(check);
-				const YT = (window as any).YT;
-				const state = p.getPlayerState();
-				isPlaying = state === YT.PlayerState.PLAYING;
-				isMuted = p.isMuted?.() ?? true;
-				if (isPlaying) startProgressTracking();
-				setInterval(() => {
-					const s = p.getPlayerState();
-					const playing = s === YT.PlayerState.PLAYING;
-					if (playing !== isPlaying) {
-						isPlaying = playing;
-						if (playing) startProgressTracking();
-						else stopProgressTracking();
-					}
-					isMuted = p.isMuted?.() ?? true;
-				}, 500);
-			}
-		}, 300);
-	}
-
-	function togglePlay() {
-		const p = getPlayer();
-		if (!p) return;
-		if (isPlaying) {
-			p.pauseVideo();
-		} else {
-			p.playVideo();
-		}
-	}
-
-	function toggleMute() {
-		const p = getPlayer();
-		if (!p) return;
-		if (isMuted) {
-			p.unMute();
-			p.setVolume(2);
-		} else {
-			p.mute();
-		}
-		isMuted = p.isMuted?.() ?? isMuted;
-	}
-
-	function startProgressTracking() {
-		stopProgressTracking();
-		progressInterval = setInterval(() => {
-			const p = getPlayer();
-			if (p && p.getDuration) {
-				const duration = p.getDuration();
-				const current = p.getCurrentTime();
-				if (duration > 0) {
-					progress = (current / duration) * 100;
-				}
-			}
-		}, 250);
-	}
-
-	function stopProgressTracking() {
-		if (progressInterval) {
-			clearInterval(progressInterval);
-			progressInterval = null;
-		}
-	}
-
-	function seekTo(e: MouseEvent) {
-		const p = getPlayer();
-		if (!p || !p.getDuration) return;
-		const bar = e.currentTarget as HTMLElement;
-		const rect = bar.getBoundingClientRect();
-		const pct = (e.clientX - rect.left) / rect.width;
-		p.seekTo(pct * p.getDuration(), true);
-	}
 
 	async function fetchContributions() {
 		try {
@@ -152,12 +64,17 @@
 	onMount(() => {
 		mounted = true;
 		updateTime();
-		const interval = setInterval(updateTime, 1000);
-		pollForPlayer();
+		// Only shows HH:MM — sync to next minute boundary, then update every 60s
+		const msUntilNextMinute = (60 - new Date().getSeconds()) * 1000;
+		let interval: ReturnType<typeof setInterval>;
+		const minuteTimeout = setTimeout(() => {
+			updateTime();
+			interval = setInterval(updateTime, 60000);
+		}, msUntilNextMinute);
 		fetchContributions();
 		return () => {
-			clearInterval(interval);
-			stopProgressTracking();
+			clearTimeout(minuteTimeout);
+			if (interval) clearInterval(interval);
 		};
 	});
 </script>
@@ -166,35 +83,7 @@
 	<div class="panels-wrap">
 	<!-- === LEFT PANEL (30%) === -->
 	<div class="panel-left">
-		<!-- Music player bar -->
-		<div class="player-bar">
-			<button class="player-toggle" onclick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
-				{#if isPlaying}
-					<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-						<rect x="1" y="1" width="3" height="8" />
-						<rect x="6" y="1" width="3" height="8" />
-					</svg>
-				{:else}
-					<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-						<polygon points="2,1 9,5 2,9" />
-					</svg>
-				{/if}
-			</button>
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="progress-track" onclick={seekTo}>
-				<div class="progress-fill" style="width: {progress}%"></div>
-			</div>
-			<button class="mute-toggle" onclick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
-				{#if isMuted}
-					<SpeakerSimpleSlash size={14} weight="regular" />
-				{:else}
-					<SpeakerSimpleHigh size={14} weight="regular" />
-				{/if}
-			</button>
-		</div>
-
-		<!-- Identity card -->
+			<!-- Identity card -->
 		<div class="identity-card">
 			<div class="name-block">
 				<h1 class="name">Hebu</h1>
@@ -337,68 +226,6 @@
 		padding: 3rem 3.5rem;
 	}
 
-	/* === PLAYER BAR === */
-	.player-bar {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		margin-bottom: 1.25rem;
-	}
-	.player-toggle {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		border: 1.5px solid var(--color-text-muted);
-		background: none;
-		color: var(--color-text-dim);
-		cursor: pointer;
-		flex-shrink: 0;
-		transition: all 0.2s ease;
-		padding: 0;
-	}
-	.player-toggle:hover {
-		border-color: var(--color-highlight);
-		color: var(--color-highlight);
-	}
-	.progress-track {
-		flex: 1;
-		height: 3px;
-		background: var(--color-border);
-		border-radius: 2px;
-		cursor: pointer;
-		position: relative;
-		overflow: hidden;
-	}
-	.progress-fill {
-		position: absolute;
-		top: 0;
-		left: 0;
-		height: 100%;
-		background: var(--color-highlight);
-		border-radius: 2px;
-		transition: width 0.25s linear;
-	}
-	.mute-toggle {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 22px;
-		height: 22px;
-		border: none;
-		background: none;
-		color: var(--color-text-muted);
-		cursor: pointer;
-		flex-shrink: 0;
-		padding: 0;
-		transition: color 0.2s ease;
-	}
-	.mute-toggle:hover {
-		color: var(--color-highlight);
-	}
-
 	/* === IDENTITY CARD === */
 	.identity-card {
 		display: flex;
@@ -453,6 +280,7 @@
 		opacity: 0;
 		transform: scale(0);
 		animation: cell-pop 0.3s ease forwards;
+		will-change: transform, opacity;
 	}
 	.contrib-cell[data-level="1"] {
 		--cell-color: #a99bbe;
@@ -639,6 +467,7 @@
 		display: flex;
 		white-space: nowrap;
 		animation: marquee 40s linear infinite;
+		will-change: transform;
 	}
 	.marquee-track span {
 		font-size: 0.55rem;
