@@ -239,10 +239,8 @@
 		background: rgba(93, 78, 117, 0.35);
 		border-left: 1px solid rgba(93, 78, 117, 0.15);
 		box-shadow:
-			inset 0 0 80px rgba(93, 78, 117, 0.06),
 			inset 1px 0 0 rgba(255, 255, 255, 0.18),
-			inset 0 1px 0 rgba(255, 255, 255, 0.12),
-			0 0 40px rgba(93, 78, 117, 0.08);
+			inset 0 1px 0 rgba(255, 255, 255, 0.12);
 		color: #0a0a0e;
 		z-index: 1;
 		overflow-y: auto;
@@ -331,7 +329,6 @@
 		opacity: 0;
 		transform: scale(0);
 		animation: cell-pop 0.3s ease forwards;
-		will-change: transform, opacity;
 	}
 	.contrib-cell[data-level="1"] {
 		--cell-color: #a99bbe;
@@ -373,7 +370,7 @@
 		font-size: 0.9rem;
 		color: var(--color-text-dim);
 		text-decoration: none;
-		transition: all 0.2s ease;
+		transition: color 0.2s ease, transform 0.2s ease;
 		animation: fade-in 0.4s ease both;
 	}
 	.link-item:hover {
@@ -411,7 +408,9 @@
 		position: relative;
 		overflow: hidden;
 		animation: fade-in 0.4s ease both;
-		transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+		transition: color 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+			padding-left 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+			background-color 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 	}
 	.nav-btn:first-child {
 		border-top: 1px solid var(--color-border);

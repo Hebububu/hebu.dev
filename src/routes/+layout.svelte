@@ -112,6 +112,5 @@
 		opacity: 0.035;
 		pointer-events: none;
 		z-index: 50;
-		mix-blend-mode: multiply;
 	}
 </style>
