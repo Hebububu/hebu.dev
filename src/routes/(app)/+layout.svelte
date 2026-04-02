@@ -3,7 +3,9 @@
 		GithubLogo,
 		DiscordLogo,
 		EnvelopeSimple,
-		TwitterLogo
+		TwitterLogo,
+		SpeakerSimpleHigh,
+		SpeakerSimpleSlash
 	} from 'phosphor-svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
@@ -12,6 +14,23 @@
 
 	let mounted = $state(false);
 	let time = $state('');
+	let isMuted = $state(true);
+
+	function getVideo(): HTMLVideoElement | null {
+		return document.querySelector('.video-bg video');
+	}
+
+	function toggleMute() {
+		const video = getVideo();
+		if (!video) return;
+		if (video.muted) {
+			video.muted = false;
+			video.volume = 0.02;
+		} else {
+			video.muted = true;
+		}
+		isMuted = video.muted;
+	}
 
 	// Contribution grid from GitHub data (fetched client-side)
 	let contributions: number[][] = $state([]);
@@ -83,7 +102,18 @@
 	<div class="panels-wrap">
 	<!-- === LEFT PANEL (30%) === -->
 	<div class="panel-left">
-			<!-- Identity card -->
+		<!-- Mute toggle -->
+		<div class="mute-bar">
+			<button class="mute-toggle" onclick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+				{#if isMuted}
+					<SpeakerSimpleSlash size={14} weight="regular" />
+				{:else}
+					<SpeakerSimpleHigh size={14} weight="regular" />
+				{/if}
+			</button>
+		</div>
+
+		<!-- Identity card -->
 		<div class="identity-card">
 			<div class="name-block">
 				<h1 class="name">Hebu</h1>
@@ -224,6 +254,27 @@
 		justify-content: center;
 		min-height: 100%;
 		padding: 3rem 3.5rem;
+	}
+
+	/* === MUTE TOGGLE === */
+	.mute-bar {
+		margin-bottom: 1.25rem;
+	}
+	.mute-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		border: none;
+		background: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		padding: 0;
+		transition: color 0.2s ease;
+	}
+	.mute-toggle:hover {
+		color: var(--color-highlight);
 	}
 
 	/* === IDENTITY CARD === */

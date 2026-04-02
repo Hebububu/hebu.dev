@@ -1,8 +1,28 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { onMount } from 'svelte';
 
 	let { children } = $props();
+	let videoEl: HTMLVideoElement;
+
+	onMount(() => {
+		// Unmute with low volume on first user interaction
+		const unmute = () => {
+			if (videoEl) {
+				videoEl.muted = false;
+				videoEl.volume = 0.02;
+			}
+			document.removeEventListener('click', unmute);
+			document.removeEventListener('keydown', unmute);
+		};
+		document.addEventListener('click', unmute);
+		document.addEventListener('keydown', unmute);
+		return () => {
+			document.removeEventListener('click', unmute);
+			document.removeEventListener('keydown', unmute);
+		};
+	});
 </script>
 
 <svelte:head>
@@ -17,7 +37,7 @@
 </svelte:head>
 
 <div class="video-bg">
-	<video autoplay loop muted playsinline>
+	<video bind:this={videoEl} autoplay loop muted playsinline>
 		<source src="/bg.mp4" type="video/mp4" />
 	</video>
 	<div class="video-overlay"></div>
